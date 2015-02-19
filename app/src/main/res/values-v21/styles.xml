@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light">
+    </style>
+    <style name="RemoteButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:textColor">#556699</item>
+        <item name="android:textSize">20dp</item>
+        <item name="android:layout_margin">40dp</item>
+        <item name="android:text">X</item>
+    </style>
+</resources>
