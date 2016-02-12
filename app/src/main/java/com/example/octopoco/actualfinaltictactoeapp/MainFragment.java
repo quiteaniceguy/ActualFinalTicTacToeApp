@@ -32,9 +32,24 @@ public class MainFragment extends Fragment{
     ///must be reset each run
     Integer[][] placeValues=new Integer[3][3];
 
-    private static final String[] PLAYER_CHAR={"X","O"};
-    private static final String EMPTY_CHAR="-";
     private int currentPlayer=0;
+
+
+
+    private int[] playerMask={0,0};
+    private static final String EMPTY_CHAR="-";
+    public static final String[] PLAYER_CHAR={"X","O"};
+    public enum Win_P{
+        ROW(7),COL(73),DIAG1(273),DIAG2(84),FULL_BOARD(511);
+
+        private final int value;
+        private Win_P(int value){
+            this.value=value;
+        }
+        public int getValue(){
+            return value;
+        }
+    }
 
 
 
@@ -55,84 +70,14 @@ public class MainFragment extends Fragment{
         View.OnClickListener listener=new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                switch(v.getId()){
-                    case 0:
-                        if(board[0][0]=="-") {
-                            changeBoard(0, 0);
-                            changePlayerCounter();
-                            aiTurn();
-                            Log.d(tag, "00");
-                        }
-                        break;
-
-                    case 1:
-                        if(board[0][1]=="-") {
-                            changeBoard(0, 1);
-                            changePlayerCounter();
-                            aiTurn();
-                        }
-                        break;
-
-                    case 2:
-                        if(board[0][2]=="-") {
-                            changeBoard(0, 2);
-                            changePlayerCounter();
-                            aiTurn();
-                        }
-                        break;
-
-                    case 3:
-                        if(board[1][0]=="-") {
-                            changeBoard(1, 0);
-                            changePlayerCounter();
-                            aiTurn();
-                        }
-                        break;
-
-                    case 4:
-                        if(board[1][1]=="-") {
-                            changeBoard(1, 1);
-                            changePlayerCounter();
-                            aiTurn();
-                            Log.d(tag, "11");
-                        }
-                        break;
-
-                    case 5:
-                        if(board[1][2]=="-") {
-                            changeBoard(1, 2);
-                            changePlayerCounter();
-                            aiTurn();
-                        }
-                        break;
-
-                    case 6:
-                        if(board[2][0]=="-") {
-                            changeBoard(2, 0);
-                            changePlayerCounter();
-                            aiTurn();
-                        }
-                        break;
-
-                    case 7:
-                        if(board[2][1]=="-") {
-                            changeBoard(2, 1);
-                            changePlayerCounter();
-                            aiTurn();
-                        }
-                        break;
-
-                    case 8:
-                        if(board[2][2]=="-") {
-                            changeBoard(2, 2);
-                            changePlayerCounter();
-                            aiTurn();
-                            Log.d(tag, "22");
-                        }
-                        break;
-
+                int id=v.getId();
+                if(id==0){
+                    System.out.println("its zero, it juist doesn't want to say");
+                    return;
                 }
-
+                changeBoard(id);
+                System.out.println(String.valueOf(v.getId()));
+                aiTurn();
             }
         };
         ///set button listener for each button
@@ -157,98 +102,78 @@ public class MainFragment extends Fragment{
         dialog.show(fm, DIALOG_DATE);
     }
 
-    public boolean checkIfWinning(String[][] board,String player){
-        ///checks horizontal three in a row
-        String winningmessage="you won player "+player;
-        for(int x=0;x<3;x++){
-            int counter=0;
-            for(int y=0;y<3;y++){
-
-                if(board[x][y]==player){
-
-                    counter++;
-                }
-            }
-            if(counter==3){
-
+    public boolean checkIfWinning(){
+        // checks horizontal three in a row
+        for(int x=0;x < 3;x++){
+            int rowMask = (Win_P.ROW.getValue() << (x*3));
+            if((rowMask & playerMask[currentPlayer]) == rowMask){
                 return true;
             }
         }
-        for(int x=0;x<3;x++){
-            int counter=0;
-            for(int y=0;y<3;y++){
-
-                if(board[y][x]==player){
-                    counter++;
-                }
-            }
-            if(counter==3){
-
+        // checks vertical three in a row
+        for(int x=0;x < 3;x++){
+            int colMask = (Win_P.COL.getValue() << x);
+            if((colMask & playerMask[currentPlayer]) == colMask){
                 return true;
             }
         }
-        int counter2=0;
-        int counter3=0;
-        for(int xy=0;xy<3;xy++){
-            if(board[xy][xy]==player){
-                counter2++;
-            }
-            if(board[xy][2-xy]==player){
-                counter3++;
-            }
-        }
-        if(counter2==3 || counter3==3){
-
+        // check diagonals
+        if((Win_P.DIAG1.getValue() & playerMask[currentPlayer]) == Win_P.DIAG1.getValue()){
             return true;
         }
-
-
+        if((Win_P.DIAG2.getValue() & playerMask[currentPlayer]) == Win_P.DIAG2.getValue()){
+            return true;
+        }
         return false;
-
     }
     ///changes board and checks winning player
-    private void changeBoard(int x, int y){
-        board[x][y]=PLAYER_CHAR[currentPlayer];
+    private void changeBoard(int id){
+        playerMask[currentPlayer] |= (1<<id); // Current player takes id
         printBoard();
         ///checks for winning player
-        if(checkIfWinning(board,PLAYER_CHAR[currentPlayer])){
+        if(checkIfWinning()){
             getActivity().setTitle("PLAYER "+PLAYER_CHAR[currentPlayer]+" WON");
             resetGame();
 
         }
         ///checks for ties
-        if(true!=checkIfFilled()){
+        if(!checkIfFilled()){
             getActivity().setTitle("DRAW");
             resetGame();
         }
-
+        changeCurrentPlayer();
     }
 
     ///makes display equal to board
+    /// makes display equal to board
     private void printBoard(){
-        for(int i=0;i<tableLayout.getChildCount();i++) {
+        for(int i=0,id=0;i<tableLayout.getChildCount();i++) {
             TableRow row = (TableRow) tableLayout.getChildAt(i);
             for (int j = 0; j < row.getChildCount(); j++) {
                 Button button = (Button) row.getChildAt(j);
-                button.setText(board[i][j]);
+                // Determine text
+                button.setText(getCurrentDisplayCharForId(id++));
             }
         }
     }
-    private void changePlayerCounter(){
+
+    private String getCurrentDisplayCharForId(int id){
+        if((playerMask[0]&(1<<id)) > 0){
+            return PLAYER_CHAR[0];
+        }else if((playerMask[1]&(1<<id)) > 0){
+            return PLAYER_CHAR[1];
+        }
+        return EMPTY_CHAR;
+    }
+    private void changeCurrentPlayer(){
         if(++currentPlayer==2){
             currentPlayer=0;
         }
     }
-    public void resetGame(){
-        ///resest board
-        for(int x=0;x<3;x++){
-            for(int y=0;y<3;y++){
-                board[x][y]="-";
-            }
-        }
-
+    public void resetGame() {
+        /// simply resest board by setting values to 0
+        playerMask[0]=playerMask[1]=0;
         printBoard();
-
     }
     private boolean checkIfFilled(){
         for(String[] x:board){
@@ -260,200 +185,53 @@ public class MainFragment extends Fragment{
         }
         return false;
     }
+    private static final Random random = new Random();
     private void aiTurn() {
-        //coordiantes for final move
-        String player;
-        int x=0;
-        int y=0;
-        if (PLAYER_CHAR[currentPlayer] == "O") {
-            player = "X";
-        } else {
-            player = "O";
-        }
-
-        ArrayList<Integer> bestxMoves=new ArrayList<Integer>();
-        ArrayList<Integer> bestyMoves=new ArrayList<Integer>();
-
-
-        String[][] fakeboard = board;
-        String[][] fakeboard2;
-        String debugMessage="";
-
-
-
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                int pathValue2=5;
-                if (fakeboard[i][j] == "-") {
-                    fakeboard[i][j] ="O";
-                    if (checkIfWinning(fakeboard, "O")) {
-                        pathValue2 = 10;
-
-
-
-
-
-                    }
-                    else if (pathValue2 != 10) {
-
-                        pathValue2=evaluatePath("X",fakeboard);
-
-
-                    }
-
-                    placeValues[i][j]=pathValue2;
-                    fakeboard[i][j] = "-";
-                }
+        int bestId = -1;
+        int outcome = -2;
+        int res;
+        for(int id=0;id<9;id++){
+            if((playerMask[0]&(1<<id)) > 0) continue; // already set by player 0
+            if((playerMask[1]&(1<<id)) > 0) continue; // already set by player 1
+            playerMask[currentPlayer] |= (1<<id);
+            if(checkIfWinning()){
+                res = 1;
+            }else{
+                changeCurrentPlayer();
+                res = evaluatePath();
+                changeCurrentPlayer();
             }
-        }
-
-        int highestValueMove=0;
-        ///finds move with the highest value;
-        for(int i=0;i<3;i++){
-            for(int j=0;j<3;j++){
-                if(board[i][j]=="-") {
-                    if (placeValues[i][j] >= highestValueMove) {
-                        highestValueMove = placeValues[i][j];
-                    }
-                }
+            if(outcome < res || (outcome == res && random.nextBoolean())){
+                outcome = res;
+                bestId = id;
             }
+            playerMask[currentPlayer] -= (1<<id);
         }
-        int counter=0;
-        ////makes list of highest value move
-        for(int i=0;i<3;i++){
-            for(int j=0;j<3;j++){
-                if(board[i][j]=="-") {
-                    if (placeValues[i][j] == highestValueMove) {
-                        bestxMoves.add(i);
-                        bestyMoves.add(j);
-                        counter++;
-                    }
-                }
-            }
-        }
-        Random random=new Random();
-        int randomBestMove;
-        if(bestxMoves.size()>=1) {
-            randomBestMove = random.nextInt(bestxMoves.size());
-            x=bestxMoves.get(randomBestMove);
-            y=bestyMoves.get(randomBestMove);
-        }else{
-            x=1;
-            y=1;
-            getActivity().setTitle(String.valueOf(counter));
-        }
-
-
-
-
-
-        changeBoard(x, y);
-        changePlayerCounter();
-        String bestxs="";
-        for(int i:bestxMoves){
-            bestxs+=String.valueOf(i);
-        }
-        String bestys="";
-        for(int i: bestyMoves){
-            bestys+=String.valueOf(i);
-        }
-        for(int i=0;i<3;i++){
-            for(int j=0;j<3;j++){
-                placeValues[i][j]=5;
-            }
-        }
-        Log.d(tag, bestxs+"    "+bestys+"    "+highestValueMove+"     "+debugMessage);
+        changeBoard(bestId);
     }
+    // -1 => lose
+// 0 => draw
+// 1 => win
     //for testing purpose only. may delete later
 ///return value of path for each available move
-    private int evaluatePath(String Player, String[][] fakeboard) {
-
-        switch (Player) {
-            case "X":
-                int returnValue = 10;
-                boolean checkIfLoopRan=false;
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        int pathValue = 5;
-                        if (fakeboard[i][j] == "-") {
-                            checkIfLoopRan=true;
-                            fakeboard[i][j] = "X";
-                            if (checkIfWinning(fakeboard, "X")) {
-                                pathValue = 0;
-
-
-                            } else if (pathValue != 0) {
-
-                                ///what does pathValue even do!?!?!
-                                pathValue = evaluatePath("O",fakeboard);
-
-
-
-                            }
-                            if (pathValue < returnValue) {
-                                returnValue = pathValue;
-                            }
-                            fakeboard[i][j] = "-";
-                        }
-
-
-
-
-
-
-
-                    }
-                }
-                if(!checkIfLoopRan){
-                    returnValue=5;
-                }
-                return returnValue;
-
-
-
-            case "O":
-                int returnValue2 = 0;
-                boolean checkIfLoopRan2=false;
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        int pathValue = 5;
-                        if (fakeboard[i][j] == "-") {
-                            checkIfLoopRan2=true;
-                            fakeboard[i][j] = "O";
-                            if (checkIfWinning(fakeboard, "O")) {
-
-
-                                pathValue = 10;
-
-
-                            } else if (pathValue != 10) {
-
-
-
-                                pathValue=evaluatePath("X",fakeboard);
-
-
-                            }
-                            if (pathValue > returnValue2) {
-                                returnValue2 = pathValue;
-                            }
-
-                            fakeboard[i][j] = "-";
-                        }
-
-
-
-                    }
-                }
-                if(!checkIfLoopRan2){
-                    returnValue2=5;
-                }
-                return returnValue2;
-
+    private int evaluatePath() {
+        if(!checkIfFilled()){
+            return 0;
         }
-        return 5;
-
-
+        int best = -2;
+        for(int id=0;id<9;id++){
+            if((playerMask[0]&(1<<id)) > 0) continue; // already set by player 0
+            if((playerMask[1]&(1<<id)) > 0) continue; // already set by player 1
+            playerMask[currentPlayer] |= (1<<id);
+            if(checkIfWinning()){
+                return 1;
+            }
+            changeCurrentPlayer();
+            best = Math.max(best, evaluatePath()*-1);
+            changeCurrentPlayer();
+            playerMask[currentPlayer] -= (1<<id);
+        }
+        return best;
     }
 
 }
